@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>App Zone</title>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        
+        :root {
+            --primary-bg: #0A192F;
+            --secondary-bg: #1B1B3A;
+            --accent-purple: #9B5DE5;
+            --accent-blue: #00BBF9;
+            --accent-pink: #F25BB5;
+            --text-light: #FFFFFF;
+            --text-dim: #B0B0D0;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --border-radius: 16px;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--primary-bg), var(--secondary-bg));
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        /* Welcome Banner */
+        .welcome-banner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 2in;
+            height: 1in;
+            background: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            animation: fadeOut 1s ease 1s forwards;
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; visibility: visible; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+        
+        .welcome-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 900;
+            color: white;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 900;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+        
+        .search-btn {
+            background: var(--accent-blue);
+            border: none;
+            width: 45px;
+            border-radius: 12px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .category-filter {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        
+        .category-btn {
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            color: var(--text-dim);
+            font-size: 14px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .category-btn.active {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+        
+        /* Slider */
+        .slider-container {
+            padding: 20px;
+        }
+        
+        .slider {
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            height: 200px;
+            position: relative;
+        }
+        
+        .slider-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.5s ease;
+        }
+        
+        /* Apps Grid */
+        .apps-grid {
+            padding: 0 20px 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .app-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .app-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .app-icon {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+        
+        .app-info {
+            padding: 12px;
+        }
+        
+        .app-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .app-developer {
+            color: var(--accent-blue);
+            font-size: 12px;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .app-price {
+            display: inline-block;
+            padding: 4px 8px;
+            background: rgba(37, 211, 102, 0.2);
+            color: #25D366;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        /* App Detail Modal */
+        .app-detail-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--primary-bg);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .app-detail-modal.active {
+            display: block;
+        }
+        
+        .app-detail-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-bg), var(--secondary-bg));
+            position: relative;
+        }
+        
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .app-detail-top {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        
+        .app-detail-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+        
+        .app-detail-title {
+            flex: 1;
+        }
+        
+        .app-detail-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .app-detail-developer {
+            color: var(--accent-blue);
+            font-size: 14px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        
+        .download-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .download-btn {
+            padding: 12px 24px;
+            background: var(--accent-blue);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .price-tag {
+            padding: 8px 16px;
+            background: rgba(37, 211, 102, 0.2);
+            color: #25D366;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .app-detail-body {
+            padding: 20px;
+        }
+        
+        .screenshots {
+            margin-bottom: 30px;
+        }
+        
+        .screenshots-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .screenshots-grid {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+        
+        .screenshot {
+            width: 200px;
+            height: 400px;
+            border-radius: 12px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        
+        .description {
+            margin-bottom: 30px;
+        }
+        
+        .description-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .description-text {
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+        
+        .download-count {
+            color: var(--text-dim);
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        
+        .similar-apps {
+            margin-bottom: 30px;
+        }
+        
+        .similar-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        /* Auth Screens */
+        .auth-screen, .main-screen {
+            display: none;
+        }
+        
+        .auth-screen.active, .main-screen.active {
+            display: block;
+        }
+        
+        .auth-form, .register-form {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .form-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            margin-bottom: 25px;
+            text-align: center;
+            color: var(--text-light);
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-dim);
+            font-size: 14px;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-light);
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(0, 187, 249, 0.2);
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .checkbox-label {
+            margin-left: 10px;
+            color: var(--text-dim);
+            font-size: 14px;
+        }
+        
+        .auth-button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .auth-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .auth-switch {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-dim);
+        }
+        
+        .switch-link {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        /* Loading */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .loading.active {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--glass-bg);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* No Internet */
+        .no-internet {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .no-internet.active {
+            display: flex;
+        }
+        
+        .no-internet-text {
+            font-size: 24px;
+            color: #333;
+            text-align: center;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .apps-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 12px;
+            }
+            
+            .app-icon {
+                height: 100px;
+            }
+            
+            .app-name {
+                font-size: 12px;
+            }
+            
+            .app-developer {
+                font-size: 10px;
+            }
+            
+            .auth-form, .register-form {
+                padding: 20px;
+                margin: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Banner -->
+    <div class="welcome-banner">
+        <div class="welcome-text">WELCOME</div>
+    </div>
+    
+    <!-- No Internet Warning -->
+    <div class="no-internet">
+        <div class="no-internet-text">📊 Please On Your Internet</div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading">
+        <div class="spinner"></div>
+    </div>
+    
+    <div class="container">
+        <!-- Authentication Screen -->
+        <div class="auth-screen active" id="authScreen">
+            <div class="auth-form" id="loginForm">
+                <h2 class="form-title">LOGIN</h2>
+                <div class="input-group">
+                    <label class="input-label">Email</label>
+                    <input type="email" class="input-field" id="loginEmail" placeholder="Enter your email">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Password</label>
+                    <input type="password" class="input-field" id="loginPassword" placeholder="Enter your password">
+                </div>
+                <button class="auth-button" onclick="login()">LOGIN</button>
+                <div class="auth-switch">
+                    Don't have an account? <a class="switch-link" onclick="showRegister()">Register</a>
+                </div>
+            </div>
+            
+            <div class="register-form" id="registerForm" style="display: none;">
+                <h2 class="form-title">REGISTER</h2>
+                <div class="input-group">
+                    <label class="input-label">Email</label>
+                    <input type="email" class="input-field" id="regEmail" placeholder="Enter your email">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Password</label>
+                    <input type="password" class="input-field" id="regPassword" placeholder="Enter password (min 8 chars)">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Name</label>
+                    <input type="text" class="input-field" id="regName" placeholder="Enter your name">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Number</label>
+                    <input type="tel" class="input-field" id="regNumber" placeholder="Enter mobile number">
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="regTerms">
+                    <label class="checkbox-label">You are Conform for open app</label>
+                </div>
+                <button class="auth-button" onclick="register()">REGISTER</button>
+                <div class="auth-switch">
+                    Already have an account? <a class="switch-link" onclick="showLogin()">Login</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Screen -->
+        <div class="main-screen" id="mainScreen">
+            <!-- Header with Search -->
+            <div class="header">
+                <div class="logo">APP ZONE</div>
+                <div class="search-bar">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search apps and games...">
+                    <button class="search-btn" onclick="searchApps()">🔍</button>
+                </div>
+                <div class="category-filter">
+                    <button class="category-btn active" onclick="filterCategory('all')">All</button>
+                    <button class="category-btn" onclick="filterCategory('game')">Games</button>
+                    <button class="category-btn" onclick="filterCategory('app')">Apps</button>
+                    <button class="category-btn" onclick="filterCategory('trending')">Trending</button>
+                    <button class="category-btn" onclick="filterCategory('new')">New</button>
+                </div>
+            </div>
+            
+            <!-- Slider -->
+            <div class="slider-container">
+                <div class="slider" id="imageSlider">
+                    <!-- Slider images will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Apps Grid -->
+            <div class="apps-grid" id="appsGrid">
+                <!-- Apps will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- App Detail Modal -->
+        <div class="app-detail-modal" id="appDetailModal">
+            <div class="app-detail-header">
+                <button class="back-btn" onclick="closeAppDetail()">←</button>
+                <div class="app-detail-top">
+                    <div class="app-detail-icon" id="detailIcon">📱</div>
+                    <div class="app-detail-title">
+                        <div class="app-detail-name" id="detailName">App Name</div>
+                        <div class="app-detail-developer" id="detailDeveloper" onclick="viewDeveloperApps()">Developer Name</div>
+                    </div>
+                </div>
+                <div class="download-section">
+                    <button class="download-btn" id="downloadBtn" onclick="downloadApp()">DOWNLOAD</button>
+                    <div class="price-tag" id="priceTag">FREE</div>
+                </div>
+            </div>
+            <div class="app-detail-body">
+                <div class="screenshots">
+                    <div class="screenshots-title">Screenshots & Video</div>
+                    <div class="screenshots-grid" id="screenshotsGrid">
+                        <!-- Screenshots will be loaded here -->
+                    </div>
+                </div>
+                <div class="description">
+                    <div class="description-title">Description</div>
+                    <div class="description-text" id="descriptionText">App description will appear here.</div>
+                </div>
+                <div class="download-count" id="downloadCount">0 Downloads</div>
+                <div class="similar-apps">
+                    <div class="similar-title">Similar Apps</div>
+                    <div class="apps-grid" id="similarAppsGrid">
+                        <!-- Similar apps will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Adsterra Ad -->
+    <div id="adContainer" style="position: fixed; bottom: 0; width: 100%; text-align: center; background: var(--card-bg); padding: 10px; z-index: 999;">
+        <script type="text/javascript">
+            atOptions = {
+                'key' : '84c8dcbd6f600a8e4e6b02bd830f80e5',
+                'format' : 'iframe',
+                'height' : 90,
+                'width' : 728,
+                'params' : {}
+            };
+        </script>
+        <script type="text/javascript" src="//www.highperformanceformat.com/84c8dcbd6f600a8e4e6b02bd830f80e5/invoke.js"></script>
+    </div>
+    
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDnQ-6gBPVeSr15UkcojM91AR1KOKqv1HU",
+            authDomain: "app-zone-d95a5.firebaseapp.com",
+            projectId: "app-zone-d95a5",
+            storageBucket: "app-zone-d95a5.firebasestorage.app",
+            messagingSenderId: "395584113731",
+            appId: "1:395584113731:web:2c8d0198b3ab6c6947d8f6"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        // Current user data
+        let currentUser = null;
+        let userData = null;
+        let currentAppDetail = null;
+        let allApps = [];
+        let currentCategory = 'all';
+        
+        // DOM Elements
+        const authScreen = document.getElementById('authScreen');
+        const mainScreen = document.getElementById('mainScreen');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const loading = document.querySelector('.loading');
+        const noInternet = document.querySelector('.no-internet');
+        const welcomeBanner = document.querySelector('.welcome-banner');
+        const appsGrid = document.getElementById('appsGrid');
+        const appDetailModal = document.getElementById('appDetailModal');
+        const imageSlider = document.getElementById('imageSlider');
+        
+        // Check internet connection
+        function checkInternetConnection() {
+            if (!navigator.onLine) {
+                noInternet.classList.add('active');
+                return false;
+            }
+            noInternet.classList.remove('active');
+            return true;
+        }
+        
+        // Show loading
+        function showLoading() {
+            loading.classList.add('active');
+        }
+        
+        // Hide loading
+        function hideLoading() {
+            loading.classList.remove('active');
+        }
+        
+        // Show welcome banner
+        setTimeout(() => {
+            welcomeBanner.style.display = 'none';
+        }, 2000);
+        
+        // Check for saved user
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                showLoading();
+                
+                // Load user data from Firestore
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists) {
+                    userData = userDoc.data();
+                }
+                
+                // Show main screen
+                authScreen.classList.remove('active');
+                mainScreen.classList.add('active');
+                
+                // Load data
+                loadSliderImages();
+                loadApps();
+                
+                hideLoading();
+            } else {
+                currentUser = null;
+                userData = null;
+                authScreen.classList.add('active');
+                mainScreen.classList.remove('active');
+            }
+        });
+        
+        // Show register form
+        function showRegister() {
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
+        }
+        
+        // Show login form
+        function showLogin() {
+            registerForm.style.display = 'none';
+            loginForm.style.display = 'block';
+        }
+        
+        // Login function
+        async function login() {
+            if (!checkInternetConnection()) return;
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                // Success - auth state change will handle the rest
+            } catch (error) {
+                alert('Login failed: ' + error.message);
+                hideLoading();
+            }
+        }
+        
+        // Register function
+        async function register() {
+            if (!checkInternetConnection()) return;
+            
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const name = document.getElementById('regName').value;
+            const number = document.getElementById('regNumber').value;
+            const terms = document.getElementById('regTerms').checked;
+            
+            if (!email || !password || !name || !number) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            if (password.length < 8) {
+                alert('Password must be at least 8 characters');
+                return;
+            }
+            
+            if (!terms) {
+                alert('You must agree to the terms');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                // Save user data to Firestore
+                await db.collection('users').doc(user.uid).set({
+                    email,
+                    name,
+                    number,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    downloadedApps: [],
+                    paidApps: []
+                });
+                
+                // Success - auth state change will handle the rest
+            } catch (error) {
+                alert('Registration failed: ' + error.message);
+                hideLoading();
+            }
+        }
+        
+        // Load slider images
+        async function loadSliderImages() {
+            try {
+                const sliderDoc = await db.collection('slider_images').doc('main_slider').get();
+                if (sliderDoc.exists) {
+                    const data = sliderDoc.data();
+                    const images = data.images || [];
+                    
+                    imageSlider.innerHTML = '';
+                    
+                    images.forEach((imgUrl, index) => {
+                        if (imgUrl) {
+                            const img = document.createElement('img');
+                            img.className = 'slider-image';
+                            img.src = imgUrl;
+                            img.alt = `Slider Image ${index + 1}`;
+                            img.style.display = index === 0 ? 'block' : 'none';
+                            imageSlider.appendChild(img);
+                        }
+                    });
+                    
+                    // Auto slide if multiple images
+                    if (images.length > 1) {
+                        let currentSlide = 0;
+                        setInterval(() => {
+                            const allSlides = imageSlider.querySelectorAll('.slider-image');
+                            allSlides.forEach((slide, index) => {
+                                slide.style.display = index === currentSlide ? 'block' : 'none';
+                            });
+                            currentSlide = (currentSlide + 1) % allSlides.length;
+                        }, 3000);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading slider images:', error);
+            }
+        }
+        
+        // Load apps
+        async function loadApps(category = 'all', searchQuery = '') {
+            showLoading();
+            
+            try {
+                let query = db.collection('apps').orderBy('createdAt', 'desc');
+                
+                if (category !== 'all') {
+                    query = query.where('category', '==', category);
+                }
+                
+                const appsSnapshot = await query.get();
+                allApps = [];
+                appsSnapshot.forEach(doc => {
+                    allApps.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                // Filter by search query if provided
+                if (searchQuery) {
+                    const queryLower = searchQuery.toLowerCase();
+                    allApps = allApps.filter(app => 
+                        app.nickname.toLowerCase().includes(queryLower) ||
+                        app.fullName.toLowerCase().includes(queryLower) ||
+                        app.develops.toLowerCase().includes(queryLower)
+                    );
+                }
+                
+                displayApps(allApps);
+            } catch (error) {
+                console.error('Error loading apps:', error);
+            }
+            
+            hideLoading();
+        }
+        
+        // Display apps in grid
+        function displayApps(apps) {
+            appsGrid.innerHTML = '';
+            
+            if (apps.length === 0) {
+                appsGrid.innerHTML = '<p style="text-align: center; color: var(--text-dim); grid-column: 1 / -1;">No apps found</p>';
+                return;
+            }
+            
+            apps.forEach(app => {
+                const appCard = document.createElement('div');
+                appCard.className = 'app-card';
+                appCard.onclick = () => showAppDetail(app);
+                
+                // Get first letter for icon
+                const firstLetter = app.nickname.charAt(0).toUpperCase();
+                
+                appCard.innerHTML = `
+                    <div class="app-icon">${firstLetter}</div>
+                    <div class="app-info">
+                        <div class="app-name">${app.nickname}</div>
+                        <div class="app-developer">${app.consoleUserName || app.develops}</div>
+                        <span class="app-price">${app.pricing.toUpperCase()}</span>
+                    </div>
+                `;
+                
+                appsGrid.appendChild(appCard);
+            });
+        }
+        
+        // Filter by category
+        function filterCategory(category) {
+            currentCategory = category;
+            
+            // Update active button
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadApps(category);
+        }
+        
+        // Search apps
+        function searchApps() {
+            const searchQuery = document.getElementById('searchInput').value;
+            loadApps(currentCategory, searchQuery);
+        }
+        
+        // Show app detail
+        async function showAppDetail(app) {
+            currentAppDetail = app;
+            
+            // Update modal content
+            document.getElementById('detailIcon').textContent = app.nickname.charAt(0).toUpperCase();
+            document.getElementById('detailName').textContent = app.nickname;
+            document.getElementById('detailDeveloper').textContent = app.consoleUserName || app.develops;
+            document.getElementById('descriptionText').textContent = app.description;
+            
+            // Set price tag
+            const priceTag = document.getElementById('priceTag');
+            priceTag.textContent = app.pricing.toUpperCase();
+            if (app.pricing === 'paid') {
+                priceTag.style.background = 'rgba(255, 193, 7, 0.2)';
+                priceTag.style.color = '#FFC107';
+            } else {
+                priceTag.style.background = 'rgba(37, 211, 102, 0.2)';
+                priceTag.style.color = '#25D366';
+            }
+            
+            // Update download count
+            const downloadCount = app.downloads || 0;
+            let countText = downloadCount + ' Downloads';
+            if (downloadCount >= 1000) {
+                countText = (downloadCount / 1000).toFixed(1) + 'K Downloads';
+            }
+            if (downloadCount >= 1000000) {
+                countText = (downloadCount / 1000000).toFixed(1) + 'M Downloads';
+            }
+            document.getElementById('downloadCount').textContent = countText;
+            
+            // Load screenshots
+            const screenshotsGrid = document.getElementById('screenshotsGrid');
+            screenshotsGrid.innerHTML = '';
+            
+            if (app.screenshots && app.screenshots.length > 0) {
+                app.screenshots.forEach((url, index) => {
+                    if (url) {
+                        const img = document.createElement('img');
+                        img.className = 'screenshot';
+                        img.src = url;
+                        img.alt = `Screenshot ${index + 1}`;
+                        img.onclick = () => window.open(url, '_blank');
+                        screenshotsGrid.appendChild(img);
+                    }
+                });
+            }
+            
+            // Load similar apps
+            loadSimilarApps(app.category, app.id);
+            
+            // Show modal
+            appDetailModal.classList.add('active');
+        }
+        
+        // Close app detail
+        function closeAppDetail() {
+            appDetailModal.classList.remove('active');
+        }
+        
+        // Load similar apps
+        async function loadSimilarApps(category, excludeId) {
+            const similarAppsGrid = document.getElementById('similarAppsGrid');
+            similarAppsGrid.innerHTML = '';
+            
+            try {
+                const similarSnapshot = await db.collection('apps')
+                    .where('category', '==', category)
+                    .limit(4)
+                    .get();
+                
+                similarSnapshot.forEach(doc => {
+                    if (doc.id !== excludeId) {
+                        const app = doc.data();
+                        const firstLetter = app.nickname.charAt(0).toUpperCase();
+                        
+                        const appCard = document.createElement('div');
+                        appCard.className = 'app-card';
+                        appCard.onclick = () => showAppDetail({ id: doc.id, ...app });
+                        appCard.innerHTML = `
+                            <div class="app-icon">${firstLetter}</div>
+                            <div class="app-info">
+                                <div class="app-name">${app.nickname}</div>
+                                <span class="app-price">${app.pricing.toUpperCase()}</span>
+                            </div>
+                        `;
+                        
+                        similarAppsGrid.appendChild(appCard);
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading similar apps:', error);
+            }
+        }
+        
+        // Download app
+        async function downloadApp() {
+            if (!currentAppDetail) return;
+            
+            if (currentAppDetail.pricing === 'paid') {
+                // For paid apps, redirect to payment link
+                if (currentAppDetail.paidLink) {
+                    window.open(currentAppDetail.paidLink, '_blank');
+                    
+                    // Check if user has already paid for this app
+                    if (userData && userData.paidApps && userData.paidApps.includes(currentAppDetail.id)) {
+                        // User has already paid, allow download
+                        window.open(currentAppDetail.apkUrl, '_blank');
+                    } else {
+                        // First time downloading paid app
+                        alert('Redirecting to payment page. After payment, you can download this app for 1 year.');
+                        return;
+                    }
+                }
+            } else {
+                // For free apps, open download link directly
+                window.open(currentAppDetail.apkUrl, '_blank');
+            }
+            
+            // Increment download count
+            try {
+                await db.collection('apps').doc(currentAppDetail.id).update({
+                    downloads: firebase.firestore.FieldValue.increment(1)
+                });
+                
+                // Update user's downloaded apps
+                if (currentUser) {
+                    await db.collection('users').doc(currentUser.uid).update({
+                        downloadedApps: firebase.firestore.FieldValue.arrayUnion(currentAppDetail.id)
+                    });
+                }
+                
+                // Update download count in UI
+                const currentDownloads = currentAppDetail.downloads || 0;
+                currentAppDetail.downloads = currentDownloads + 1;
+                
+                let countText = currentAppDetail.downloads + ' Downloads';
+                if (currentAppDetail.downloads >= 1000) {
+                    countText = (currentAppDetail.downloads / 1000).toFixed(1) + 'K Downloads';
+                }
+                if (currentAppDetail.downloads >= 1000000) {
+                    countText = (currentAppDetail.downloads / 1000000).toFixed(1) + 'M Downloads';
+                }
+                document.getElementById('downloadCount').textContent = countText;
+                
+            } catch (error) {
+                console.error('Error updating download count:', error);
+            }
+        }
+        
+        // View developer apps
+        async function viewDeveloperApps() {
+            if (!currentAppDetail) return;
+            
+            // In a real implementation, this would show all apps from the same developer
+            alert(`Showing all apps from ${currentAppDetail.consoleUserName || currentAppDetail.develops}`);
+        }
+        
+        // Check internet connection on load
+        window.addEventListener('load', () => {
+            checkInternetConnection();
+            window.addEventListener('online', checkInternetConnection);
+            window.addEventListener('offline', checkInternetConnection);
+        });
+    </script>
+</body>
+</html>
